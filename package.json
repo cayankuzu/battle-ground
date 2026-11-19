@@ -1,0 +1,20 @@
+{
+  "name": "battle-ground",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Battle Ground — 3D Tactical Sandbox & Army Battle Simulator by fikkis",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 5173",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host --port 4173"
+  },
+  "dependencies": {
+    "three": "^0.174.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.174.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

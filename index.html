@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>BATTLE GROUND — 3D Tactical Sandbox · fikkis.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-render-style="ultra">
+    <div id="app">
+      <div id="canvas-container"></div>
+
+      <!-- Boot / Initial Loading Overlay -->
+      <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-card">
+          <div class="loading-kicker">SYSTEM BOOT // 3D SIMULATION ENGINE</div>
+          <div class="loading-brand">
+            <span class="brand-fikkis">fikkis<span class="dot">.</span></span>
+            <span class="brand-sep">/</span>
+            <span class="brand-title">BATTLE GROUND</span>
+          </div>
+          <p id="loading-status" class="loading-status">3D TAKTİK ARENA BAŞLATILIYOR...</p>
+          <div class="loading-bar-track">
+            <div id="loading-bar-fill" class="loading-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Brutalist Telemetry & Command Bar -->
+      <header id="top-bar" class="top-bar hud-el">
+        <div class="top-left">
+          <a href="https://fikkis.vercel.app/" target="_blank" rel="noopener" class="brand-badge" title="fikkis.vercel.app">
+            <span class="brand-fikkis">fikkis<span class="dot">.</span></span>
+          </a>
+          <div class="game-title-wrap">
+            <span class="game-title">BATTLE GROUND</span>
+            <span class="live-pill" id="sim-state-pill">
+              <span class="status-dot"></span>
+              <span id="sim-state-label">CANLI</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="top-center">
+          <div class="sim-controls">
+            <button id="btn-play-pause" class="sim-btn primary" title="Başlat / Duraklat [Space]">
+              <span class="svg-ico" id="play-pause-icon"></span>
+              <span id="play-pause-text">DURAKLAT</span>
+            </button>
+            <button id="btn-rewind" class="sim-btn" title="Son Dizilime Geri Sar [R]">
+              <span class="svg-ico" data-svg="rewind"></span>
+              <span data-i18n="rewind">SIFIRLA</span>
+            </button>
+            <button id="btn-clear" class="sim-btn danger" title="Arenayı Temizle [C]">
+              <span class="svg-ico" data-svg="clear"></span>
+              <span data-i18n="clear">TEMİZLE</span>
+            </button>
+            <div class="speed-group" id="speed-group" title="Simülasyon Hızı">
+              <button class="speed-btn" data-speed="0.25">.25×</button>
+              <button class="speed-btn" data-speed="0.5">.5×</button>
+              <button class="speed-btn active" data-speed="1">1×</button>
+              <button class="speed-btn" data-speed="2">2×</button>
+              <button class="speed-btn" data-speed="3">3×</button>
+            </div>
+          </div>
+
+          <div class="balance-telemetry">
+            <div class="team-stat red">
+              <span class="team-dot"></span>
+              <span id="red-count" class="mono-num">0</span>
+            </div>
+            <div class="balance-bar-track" title="Ordu Güç Dengesi">
+              <div id="balance-red" class="balance-fill red" style="width: 50%"></div>
+              <div id="balance-blue" class="balance-fill blue" style="width: 50%"></div>
+            </div>
+            <div class="team-stat blue">
+              <span id="blue-count" class="mono-num">0</span>
+              <span class="team-dot"></span>
+            </div>
+            <div id="ffa-stat" class="team-stat ffa hidden" title="Kaos (FFA) Birimleri">
+              <span class="team-dot"></span>
+              <span id="ffa-count" class="mono-num">0</span>
+            </div>
+            <div class="meta-telemetry">
+              <span class="meta-pair" title="Toplam Kayıp"><span class="svg-ico xs" data-svg="skull"></span><strong id="kill-count" class="mono-num">0</strong></span>
+              <span class="meta-pair" title="FPS"><strong id="fps-counter" class="mono-num">60</strong><span>FPS</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <button id="btn-graphics" class="action-pill" title="Grafik Stili & Dünya Fiziği">
+            <span class="svg-ico" data-svg="graphics"></span>
+            <span id="active-style-pill">ULTRA</span>
+          </button>
+          <button id="btn-presets" class="action-pill accent" title="Hazır Savaş Senaryoları">
+            <span class="svg-ico" data-svg="scenarios"></span>
+            <span data-i18n="presets">SENARYOLAR</span>
+          </button>
+          <button id="btn-camera-reset" class="icon-btn" title="Kamerayı Sıfırla [F]"><span class="svg-ico" data-svg="camera"></span></button>
+          <button id="btn-audio" class="icon-btn active" title="Ses Aç/Kapat [M]"><span class="svg-ico" id="audio-svg"></span></button>
+          <button id="btn-lang" class="icon-btn mono-btn" title="TR / EN">TR</button>
+          <button id="btn-help" class="icon-btn" title="Kontroller [?]"><span class="svg-ico" data-svg="help"></span></button>
+          <button id="btn-hide-hud" class="icon-btn" title="Sinematik Mod [H]"><span class="svg-ico" data-svg="eye"></span></button>
+        </div>
+      </header>
+
+      <!-- Active Mode Readout Strip (unmistakable state visibility) -->
+      <div id="mode-status-strip" class="mode-status-strip hud-el">
+        <span class="status-chip" id="chip-tool">MOD: FIRÇA</span>
+        <span class="status-chip" id="chip-team">CEPHE: OTO</span>
+        <span class="status-chip" id="chip-ai">DAVRANIŞ: SAVAŞIR</span>
+        <span class="status-chip" id="chip-style">STİL: ULTRA REALİSTİK</span>
+        <button id="btn-empty-reopen" class="status-chip-btn hidden" data-i18n="quickStartChip" title="Hızlı Başlat Barını Aç">+ HIZLI BAŞLAT</button>
+      </div>
+
+      <!-- Empty Arena Quick Start Bar (collapsible & closable) -->
+      <div id="empty-hint-bar" class="empty-hint-bar hud-el">
+        <div class="empty-hint-head">
+          <div class="empty-hint-text" data-i18n="emptyHint">
+            ALTTAN AKTİF MODA ÖZEL BİR 3D VARLIK SEÇ VEYA BİLİMSEL SENARYO BAŞLAT:
+          </div>
+          <div class="empty-hint-controls">
+            <button id="btn-empty-toggle" class="empty-ctrl-btn" title="Küçült / Büyüt">
+              <span class="svg-ico xs" data-svg="chevronDown"></span>
+            </button>
+            <button id="btn-empty-close" class="empty-ctrl-btn close-x" title="Kapat">
+              <span class="svg-ico xs" data-svg="close"></span>
+            </button>
+          </div>
+        </div>
+        <div id="quick-presets-row" class="quick-presets-row"></div>
+      </div>
+
+      <!-- Left Brutalist Tactical Command Panel -->
+      <aside id="command-panel" class="command-panel hud-el">
+        <div class="panel-header">
+          <span class="panel-title" data-i18n="commandTitle">01 // KOMUTA & FIRÇA</span>
+          <button id="btn-toggle-panel" class="panel-collapse-btn" title="Paneli Daralt/Aç">
+            <span class="svg-ico sm" data-svg="chevronLeft"></span>
+          </button>
+        </div>
+
+        <div class="panel-body">
+          <!-- Tool Mode -->
+          <div class="control-section">
+            <label class="section-label" data-i18n="toolLabel">ARAÇ MODU</label>
+            <div class="tool-grid" id="tool-grid">
+              <button class="tool-btn active" data-tool="brush" title="Fırça [B]">
+                <span class="svg-ico" data-svg="brush"></span>
+                <span data-i18n="toolBrush">FIRÇA</span>
+              </button>
+              <button class="tool-btn" data-tool="single" title="Tekli [1]">
+                <span class="svg-ico" data-svg="single"></span>
+                <span data-i18n="toolSingle">TEKLİ</span>
+              </button>
+              <button class="tool-btn" data-tool="squad" title="Manga [2]">
+                <span class="svg-ico" data-svg="squad"></span>
+                <span data-i18n="toolSquad">MANGA</span>
+              </button>
+              <button class="tool-btn" data-tool="rally" title="Emir / Sancak [G]">
+                <span class="svg-ico" data-svg="rally"></span>
+                <span data-i18n="toolRally">EMİR</span>
+              </button>
+              <button class="tool-btn" data-tool="select" title="Birim Seç & Düzenle [V]">
+                <span class="svg-ico" data-svg="select"></span>
+                <span data-i18n="toolSelect">SEÇ</span>
+              </button>
+              <button class="tool-btn danger-tool" data-tool="erase" title="Silgi [X]">
+                <span class="svg-ico" data-svg="erase"></span>
+                <span data-i18n="toolErase">SİLGİ</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Team Selector -->
+          <div class="control-section">
+            <label class="section-label" data-i18n="teamLabel">CEPHE / TAKIM</label>
+            <div class="segmented-4" id="team-selector">
+              <button class="seg-btn active" data-team="auto" data-i18n="teamAuto">OTO</button>
+              <button class="seg-btn red" data-team="red" data-i18n="teamRed">KIRMIZI</button>
+              <button class="seg-btn blue" data-team="blue" data-i18n="teamBlue">MAVİ</button>
+              <button class="seg-btn ffa" data-team="ffa" data-i18n="teamFfa">KAOS</button>
+            </div>
+          </div>
+
+          <!-- Spawn AI Behavior -->
+          <div class="control-section">
+            <label class="section-label" data-i18n="aiLabel">DAVRANIŞ PROTOKOLÜ</label>
+            <div class="ai-grid" id="spawn-ai-selector">
+              <button class="ai-btn active" data-ai="aggressive">
+                <span class="svg-ico sm" data-svg="fight"></span>
+                <span data-i18n="aiAggressive">SAVAŞIR</span>
+              </button>
+              <button class="ai-btn" data-ai="hold">
+                <span class="svg-ico sm" data-svg="hold"></span>
+                <span data-i18n="aiHold">MEVZİ</span>
+              </button>
+              <button class="ai-btn" data-ai="passive">
+                <span class="svg-ico sm" data-svg="passive"></span>
+                <span data-i18n="aiPassive">SAVAŞMAZ</span>
+              </button>
+              <button class="ai-btn" data-ai="flee">
+                <span class="svg-ico sm" data-svg="flee"></span>
+                <span data-i18n="aiFlee">KAÇAR</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Multipliers -->
+          <div class="control-section">
+            <div class="slider-row">
+              <div class="slider-head">
+                <span data-i18n="brushSize">FIRÇA / MANGA</span>
+                <span id="val-brush-size" class="mono-val">3</span>
+              </div>
+              <input id="slider-brush-size" type="range" min="1" max="10" step="1" value="3" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-head">
+                <span data-i18n="scaleLabel">BOYUT (ÖLÇEK)</span>
+                <span id="val-scale" class="mono-val">1.0×</span>
+              </div>
+              <input id="slider-scale" type="range" min="0.5" max="3.0" step="0.1" value="1.0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-head">
+                <span data-i18n="hpMult">CAN ÇARPANI</span>
+                <span id="val-hp" class="mono-val">1.0×</span>
+              </div>
+              <input id="slider-hp" type="range" min="0.25" max="5.0" step="0.25" value="1.0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-head">
+                <span data-i18n="dmgMult">HASAR ÇARPANI</span>
+                <span id="val-dmg" class="mono-val">1.0×</span>
+              </div>
+              <input id="slider-dmg" type="range" min="0.25" max="5.0" step="0.25" value="1.0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-head">
+                <span data-i18n="spdMult">HIZ ÇARPANI</span>
+                <span id="val-spd" class="mono-val">1.0×</span>
+              </div>
+              <input id="slider-spd" type="range" min="0.4" max="2.5" step="0.1" value="1.0" />
+            </div>
+
+            <button id="btn-reset-stats" class="mini-link-btn" data-i18n="resetStats">VARSAYILANA DÖN</button>
+          </div>
+
+          <!-- Global Army Commands (with active state highlight) -->
+          <div class="control-section army-orders">
+            <label class="section-label" data-i18n="armyOrders">TOPLU ORDU EMİRLERİ</label>
+            <div class="army-order-row">
+              <span class="army-tag red" data-i18n="teamRed">KIRMIZI</span>
+              <div class="order-btns" id="order-row-red">
+                <button class="order-mini red active" data-order-team="red" data-order-ai="aggressive" title="Kırmızı Ordu: Saldır"><span class="svg-ico sm" data-svg="fight"></span></button>
+                <button class="order-mini red" data-order-team="red" data-order-ai="hold" title="Kırmızı Ordu: Mevzi"><span class="svg-ico sm" data-svg="hold"></span></button>
+                <button class="order-mini red" data-order-team="red" data-order-ai="passive" title="Kırmızı Ordu: Savaşmaz"><span class="svg-ico sm" data-svg="passive"></span></button>
+                <button class="order-mini red" data-order-team="red" data-order-ai="flee" title="Kırmızı Ordu: Geri Çekil"><span class="svg-ico sm" data-svg="flee"></span></button>
+              </div>
+            </div>
+            <div class="army-order-row">
+              <span class="army-tag blue" data-i18n="teamBlue">MAVİ</span>
+              <div class="order-btns" id="order-row-blue">
+                <button class="order-mini blue active" data-order-team="blue" data-order-ai="aggressive" title="Mavi Ordu: Saldır"><span class="svg-ico sm" data-svg="fight"></span></button>
+                <button class="order-mini blue" data-order-team="blue" data-order-ai="hold" title="Mavi Ordu: Mevzi"><span class="svg-ico sm" data-svg="hold"></span></button>
+                <button class="order-mini blue" data-order-team="blue" data-order-ai="passive" title="Mavi Ordu: Savaşmaz"><span class="svg-ico sm" data-svg="passive"></span></button>
+                <button class="order-mini blue" data-order-team="blue" data-order-ai="flee" title="Mavi Ordu: Geri Çekil"><span class="svg-ico sm" data-svg="flee"></span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Drawer 1: Per-Character Custom Spec Sheet (closable with ×) -->
+      <aside id="char-spec-drawer" class="side-drawer hud-el hidden">
+        <div class="panel-header">
+          <span class="panel-title" data-i18n="charSpecTitle">KARAKTER ÖZELLEŞTİRME</span>
+          <button id="btn-close-spec" class="panel-collapse-btn close-x" title="Kapat [Esc]">
+            <span class="svg-ico sm" data-svg="close"></span>
+          </button>
+        </div>
+        <div class="drawer-body">
+          <div class="spec-hero">
+            <img id="spec-portrait" class="spec-portrait" alt="" />
+            <div class="spec-hero-info">
+              <div id="spec-name" class="spec-name">Şövalye</div>
+              <div id="spec-role" class="spec-role">TANK</div>
+              <p id="spec-desc" class="spec-desc"></p>
+            </div>
+          </div>
+
+          <!-- Real-World Scientific Telemetry Sheet -->
+          <div class="science-box" id="spec-science-box">
+            <div class="science-title" data-i18n="scienceLabel">BİLİMSEL VERİ DOSYASI (GERÇEK FİZİK)</div>
+            <div class="science-grid">
+              <div class="sci-cell"><span data-i18n="massTag">KÜTLE</span><strong id="sci-mass">105 kg</strong></div>
+              <div class="sci-cell"><span data-i18n="speedTag">HIZ</span><strong id="sci-speed">18 km/h</strong></div>
+              <div class="sci-cell"><span data-i18n="energyTag">ENERJİ</span><strong id="sci-energy">210 J</strong></div>
+              <div class="sci-cell"><span data-i18n="armorTag">ZIRH</span><strong id="sci-armor">44%</strong></div>
+            </div>
+            <div id="sci-material" class="sci-material">25 kg Temperli Çelik Plaka</div>
+            <p id="sci-note" class="sci-note"></p>
+          </div>
+
+          <!-- Autonomous Signature Special Power -->
+          <div class="special-box" id="spec-special-box">
+            <div class="special-kicker" data-i18n="specialLabel">ÖZEL GÜÇ (OTOMATİK + RASTGELE)</div>
+            <div id="spec-ability-name" class="special-name">DEMİR KALKAN</div>
+            <p id="spec-ability-desc" class="special-desc"></p>
+          </div>
+
+          <div class="control-section">
+            <div class="slider-row">
+              <div class="slider-head"><span>HP</span><span id="spec-hp-val" class="mono-val">215</span></div>
+              <input id="spec-hp" type="range" min="20" max="3000" step="10" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span>DMG</span><span id="spec-dmg-val" class="mono-val">26</span></div>
+              <input id="spec-dmg" type="range" min="0" max="400" step="2" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span data-i18n="moveSpeedLabel">HAREKET HIZI</span><span id="spec-spd-val" class="mono-val">4.1</span></div>
+              <input id="spec-spd" type="range" min="0" max="15" step="0.2" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span data-i18n="rangeLabel">MENZİL</span><span id="spec-range-val" class="mono-val">1.8</span></div>
+              <input id="spec-range" type="range" min="1" max="36" step="0.5" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span data-i18n="armorLabel">ZIRH %</span><span id="spec-armor-val" class="mono-val">35%</span></div>
+              <input id="spec-armor" type="range" min="0" max="85" step="5" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span data-i18n="scaleLabel">BOYUT</span><span id="spec-scale-val" class="mono-val">1.0×</span></div>
+              <input id="spec-scale" type="range" min="0.5" max="3.0" step="0.1" />
+            </div>
+          </div>
+
+          <div class="control-section">
+            <label class="section-label" data-i18n="traitsLabel">TAKTİK ÖZELLİKLER</label>
+            <div class="trait-grid" id="spec-trait-grid">
+              <button class="trait-btn" data-spec-trait="explosive" data-i18n="traitExplosive">PATLAYICI VURUŞ</button>
+              <button class="trait-btn" data-spec-trait="vampire" data-i18n="traitVampire">VAMPİR EMİŞİ</button>
+              <button class="trait-btn" data-spec-trait="frenzy" data-i18n="traitFrenzy">2× SALDIRI HIZI</button>
+              <button class="trait-btn" data-spec-trait="invincible" data-i18n="traitInvincible">ÖLÜMSÜZ (TEST)</button>
+            </div>
+          </div>
+
+          <div class="drawer-actions-col">
+            <button id="btn-spec-apply" class="sim-btn primary full" data-i18n="applyAllField">SAHNEDEKİLERE UYGULA</button>
+            <button id="btn-spec-reset" class="sim-btn full" data-i18n="resetSpecies">ORİJİNALE DÖN</button>
+            <button id="btn-spec-purge" class="sim-btn danger full">
+              <span class="svg-ico sm" data-svg="close"></span>
+              <span data-i18n="purgeSpecies">SAHNEDEN BU TÜRÜ ÇIKAR</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Drawer 2: Live Placed Unit Inspector (closable with ×) -->
+      <aside id="unit-inspector" class="side-drawer hud-el hidden">
+        <div class="panel-header">
+          <span class="panel-title" id="insp-name">02 // BİRİM</span>
+          <button id="btn-close-inspector" class="panel-collapse-btn close-x" title="Kapat [Esc]">
+            <span class="svg-ico sm" data-svg="close"></span>
+          </button>
+        </div>
+        <div class="drawer-body">
+          <div class="spec-hero compact">
+            <img id="insp-portrait" class="spec-portrait sm" alt="" />
+            <div class="insp-meta-col">
+              <div class="insp-meta-top">
+                <span id="insp-team-badge" class="team-pill red">KIRMIZI</span>
+                <span id="insp-kills" class="mono-val">0</span>
+              </div>
+              <div class="insp-hp-wrap">
+                <div class="insp-hp-bar"><div id="insp-hp-fill" class="insp-hp-fill"></div></div>
+                <span id="insp-hp-text" class="mono-val">100/100</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <label class="section-label" data-i18n="aiLabel">DAVRANIŞ PROTOKOLÜ</label>
+            <div class="ai-grid" id="insp-ai-grid">
+              <button class="ai-btn" data-insp-ai="aggressive"><span class="svg-ico sm" data-svg="fight"></span><span data-i18n="aiAggressive">SAVAŞIR</span></button>
+              <button class="ai-btn" data-insp-ai="hold"><span class="svg-ico sm" data-svg="hold"></span><span data-i18n="aiHold">MEVZİ</span></button>
+              <button class="ai-btn" data-insp-ai="passive"><span class="svg-ico sm" data-svg="passive"></span><span data-i18n="aiPassive">SAVAŞMAZ</span></button>
+              <button class="ai-btn" data-insp-ai="flee"><span class="svg-ico sm" data-svg="flee"></span><span data-i18n="aiFlee">KAÇAR</span></button>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <label class="section-label" data-i18n="teamLabel">CEPHE DEĞİŞTİR</label>
+            <div class="segmented-3" id="insp-team-grid">
+              <button class="seg-btn red" data-insp-team="red" data-i18n="teamRed">KIRMIZI</button>
+              <button class="seg-btn blue" data-insp-team="blue" data-i18n="teamBlue">MAVİ</button>
+              <button class="seg-btn ffa" data-insp-team="ffa" data-i18n="teamFfa">KAOS</button>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <div class="slider-row">
+              <div class="slider-head"><span data-i18n="scaleLabel">BOYUT</span><span id="insp-scale-val" class="mono-val">1.0×</span></div>
+              <input id="insp-scale-slider" type="range" min="0.5" max="3.5" step="0.1" value="1.0" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span>DMG</span><span id="insp-dmg-val" class="mono-val">26</span></div>
+              <input id="insp-dmg-slider" type="range" min="0" max="400" step="2" />
+            </div>
+          </div>
+
+          <div class="control-section">
+            <label class="section-label" data-i18n="traitsLabel">TAKTİK ÖZELLİKLER</label>
+            <div class="trait-grid" id="insp-trait-grid">
+              <button class="trait-btn" data-insp-trait="explosive" data-i18n="traitExplosive">PATLAYICI VURUŞ</button>
+              <button class="trait-btn" data-insp-trait="vampire" data-i18n="traitVampire">VAMPİR EMİŞİ</button>
+              <button class="trait-btn" data-insp-trait="frenzy" data-i18n="traitFrenzy">2× SALDIRI HIZI</button>
+              <button class="trait-btn" data-insp-trait="invincible" data-i18n="traitInvincible">ÖLÜMSÜZ (TEST)</button>
+            </div>
+          </div>
+
+          <button id="btn-insp-special" class="sim-btn primary full">
+            <span class="svg-ico sm" data-svg="scenarios"></span>
+            <span id="insp-special-label" data-i18n="triggerSpecial">ÖZEL GÜCÜ TETİKLE</span>
+          </button>
+
+          <div class="insp-actions-grid">
+            <button id="btn-insp-heal" class="sim-btn"><span class="svg-ico sm" data-svg="heal"></span><span data-i18n="inspHeal">İYİLEŞTİR</span></button>
+            <button id="btn-insp-clone" class="sim-btn"><span class="svg-ico sm" data-svg="clone"></span><span data-i18n="inspClone">KOPYALA</span></button>
+            <button id="btn-insp-follow" class="sim-btn"><span class="svg-ico sm" data-svg="lockCam"></span><span id="insp-follow-text" data-i18n="inspFollow">TAKİP ET</span></button>
+            <button id="btn-insp-delete" class="sim-btn danger"><span class="svg-ico sm" data-svg="close"></span><span data-i18n="inspDelete">ÇIKAR</span></button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Bottom Categorized 3D Unit Dock (Real 3D Studio Portraits — Zero Emojis) -->
+      <section id="unit-dock" class="unit-dock hud-el">
+        <div class="dock-header">
+          <div class="dock-tabs" id="dock-tabs"></div>
+          <div class="dock-right">
+            <div class="selected-preview" id="selected-preview">
+              <img id="sel-portrait" class="sel-portrait" alt="" />
+              <div class="sel-meta">
+                <span id="sel-name">Şövalye</span>
+                <span class="sel-stats" id="sel-stats">HP 215 · DMG 26</span>
+              </div>
+              <button id="btn-open-spec" class="spec-trigger-btn" title="Bu Karakteri Özelleştir">
+                <span class="svg-ico sm" data-svg="sliders"></span>
+                <span data-i18n="charConfigBtn">AYARLA</span>
+              </button>
+            </div>
+            <input id="unit-search" class="unit-search" type="text" placeholder="80+ BİRİM İÇİNDE ARA..." autocomplete="off" />
+            <button id="btn-toggle-dock" class="dock-collapse-btn" title="Alt Paneli Gizle/Göster [Tab]">
+              <span class="svg-ico sm" data-svg="chevronDown"></span>
+            </button>
+          </div>
+        </div>
+        <div class="rail-shell">
+          <button id="btn-rail-left" class="rail-nav-btn" aria-label="Scroll Left">‹</button>
+          <div id="unit-cards-rail" class="unit-cards-rail"></div>
+          <button id="btn-rail-right" class="rail-nav-btn" aria-label="Scroll Right">›</button>
+        </div>
+      </section>
+
+      <!-- Cinematic Mode Restore Button -->
+      <button id="btn-show-hud" class="floating-restore-hud hidden" title="Arayüzü Göster [H]">
+        <span class="svg-ico sm" data-svg="eye"></span>
+        <span data-i18n="showHud">ARAYÜZÜ GÖSTER [H]</span>
+      </button>
+
+      <!-- Battle Victory Report Banner -->
+      <div id="victory-banner" class="victory-banner hidden">
+        <div class="victory-card">
+          <button id="btn-victory-close" class="modal-close victory-x" title="Kapat">
+            <span class="svg-ico sm" data-svg="close"></span>
+          </button>
+          <div class="victory-tag" data-i18n="kickerVictory">FİKKİS // BATTLE GROUND TELEMETRİ RAPORU</div>
+          <h2 id="victory-title" class="victory-title">MAVİ ORDU ZAFERİ</h2>
+          <div class="victory-metrics">
+            <div class="v-metric">
+              <span class="v-label" data-i18n="metricDuration">SÜRE</span>
+              <strong id="v-duration" class="mono-num">00:24</strong>
+            </div>
+            <div class="v-metric">
+              <span class="v-label" data-i18n="metricCasualties">TOPLAM KAYIP</span>
+              <strong id="v-casualties" class="mono-num">48</strong>
+            </div>
+            <div class="v-metric">
+              <span class="v-label" data-i18n="metricSurvivors">HAYATTA KALAN</span>
+              <strong id="v-survivors" class="mono-num">14</strong>
+            </div>
+            <div class="v-metric wide">
+              <span class="v-label" data-i18n="metricMvp">SAVAŞIN YILDIZI (MVP)</span>
+              <strong id="v-mvp">T-Rex (12 ÖLDÜRME)</strong>
+            </div>
+          </div>
+          <div class="victory-actions">
+            <button id="btn-victory-rematch" class="sim-btn primary" aria-label="Aynı Dizilimi Tekrarla">
+              <span class="svg-ico sm" data-svg="rewind"></span>
+              <span data-i18n="rematch">AYNI DİZİLİMİ TEKRARLA [R]</span>
+            </button>
+            <button id="btn-victory-continue" class="sim-btn" data-i18n="continueSandbox">ARENADA KAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphics Style & World Physics Modal -->
+      <div id="graphics-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <div>
+              <div class="modal-kicker" data-i18n="kickerGraphics">04 // RENDER MOTORU & DÜNYA FİZİĞİ</div>
+              <h3 data-i18n="graphicsTitle">GRAFİK STİLİ & DÜNYA FİZİĞİ</h3>
+            </div>
+            <button class="modal-close" data-close-modal="graphics-modal">
+              <span class="svg-ico sm" data-svg="close"></span>
+            </button>
+          </div>
+
+          <div class="modal-section">
+            <label class="section-label" data-i18n="renderStyleLabel">GÖRSEL RENDER STİLİ (TÜM KARAKTERLER & ARENA DÖNÜŞÜR)</label>
+            <div id="render-style-grid" class="style-grid"></div>
+          </div>
+
+          <div class="modal-two-col">
+            <div class="modal-section">
+              <label class="section-label" data-i18n="qualityLabel">PERFORMANS / GÖLGE KALİTESİ</label>
+              <div id="quality-grid" class="segmented-4"></div>
+            </div>
+
+            <div class="modal-section">
+              <label class="section-label" data-i18n="biomeLabel">ARENA BİYOMU / HARİTA</label>
+              <div id="biome-grid" class="biome-grid"></div>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <label class="section-label" data-i18n="physicsLabel">DÜNYA FİZİĞİ & KURALLAR</label>
+            <div class="physics-row">
+              <div class="slider-row flex-1">
+                <div class="slider-head">
+                  <span data-i18n="gravityLabel">YERÇEKİMİ</span>
+                  <span id="val-gravity" class="mono-val">1.0g</span>
+                </div>
+                <input id="slider-gravity" type="range" min="0.2" max="2.4" step="0.1" value="1.0" />
+              </div>
+              <div class="world-toggles">
+                <button id="toggle-walls" class="world-toggle-btn" data-i18n="wallsToggle">KAPALI ENERJİ KAFESİ (DÜŞME YOK)</button>
+                <button id="toggle-ff" class="world-toggle-btn" data-i18n="ffToggle">DOST ATEŞİ (FRIENDLY FIRE)</button>
+                <button id="toggle-corpses" class="world-toggle-btn" data-i18n="corpseToggle">CESETLER SAHADA KALSIN</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Presets Modal -->
+      <div id="presets-modal" class="modal-backdrop hidden">
+        <div class="modal-card wide">
+          <div class="modal-head">
+            <div>
+              <div class="modal-kicker" data-i18n="kickerPresets">05 // TAKTİK SENARYO ARŞİVİ (13)</div>
+              <h3 data-i18n="presetsTitle">HAZIR SAVAŞ SENARYOLARI</h3>
+            </div>
+            <button class="modal-close" data-close-modal="presets-modal">
+              <span class="svg-ico sm" data-svg="close"></span>
+            </button>
+          </div>
+          <div id="presets-grid" class="presets-grid"></div>
+        </div>
+      </div>
+
+      <!-- Help Modal -->
+      <div id="help-modal" class="modal-backdrop hidden">
+        <div class="modal-card compact">
+          <div class="modal-head">
+            <div>
+              <div class="modal-kicker" data-i18n="kickerHelp">06 // SAHA KILAVUZU</div>
+              <h3 data-i18n="helpTitle">KONTROL KILAVUZU</h3>
+            </div>
+            <button class="modal-close" data-close-modal="help-modal">
+              <span class="svg-ico sm" data-svg="close"></span>
+            </button>
+          </div>
+          <div class="help-grid" id="help-content"></div>
+        </div>
+      </div>
+
+      <!-- Autonomous Ability Combat Feed (bottom-right above dock) -->
+      <div id="ability-feed" class="ability-feed hud-el"></div>
+
+      <!-- Toast Container -->
+      <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
